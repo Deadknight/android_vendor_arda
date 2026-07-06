@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ARDA: Match GAS emulator VMS startup ordering.
+         CarService starts only the Maps VMS publisher.
+         VmsControllerService must be initialized by Maps' own VMS orchestration. -->
+    <string-array name="config_earlyStartupServices" translatable="false">
+        <item>com.google.android.apps.maps/com.google.android.apps.geo.autograph.vms.platform.car.CarVmsPublisherClientService#bind=bind,user=foreground,trigger=userUnlocked</item>
+    </string-array>
+</resources>

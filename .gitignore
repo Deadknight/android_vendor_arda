@@ -1,0 +1,19 @@
+# ARDA proprietary payload
+gas_car/files/
+
+# Runtime Google split APKs
+golden_splits/**/*.apk
+
+# Build / binary artifacts
+*.apk
+*.apex
+*.img
+*.zip
+*.pk8
+*.pem
+*.der
+*.jks
+*.keystore
+
+# Local files
+.DS_Store

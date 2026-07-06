@@ -1,0 +1,9 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.arda.carservice.vms.overlay">
+
+    <overlay
+        android:targetPackage="com.android.car.updatable"
+        android:targetName="CarServiceCustomization"
+        android:isStatic="true"
+        android:priority="999" />
+</manifest>

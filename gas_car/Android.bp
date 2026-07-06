@@ -1,0 +1,148 @@
+// Auto-generated ARDA Google/GAS APK imports
+// APKs must not be added through PRODUCT_COPY_FILES.
+
+android_app_import {
+    name: "ArdaApp_AndroidAutoIMEPrebuilt",
+    apk: "files/product/app/AndroidAutoIMEPrebuilt/AndroidAutoIMEPrebuilt.apk",
+    presigned: true,
+    preprocessed: true,
+    product_specific: true,
+    privileged: false,
+    enforce_uses_libs: false,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "ArdaApp_GoogleTTS",
+    apk: "files/product/app/GoogleTTS/GoogleTTS.apk",
+    presigned: true,
+    preprocessed: true,
+    product_specific: true,
+    privileged: false,
+    enforce_uses_libs: false,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "ArdaApp_WebViewGoogle",
+    apk: "files/product/app/WebViewGoogle/WebViewGoogle.apk",
+    presigned: true,
+    preprocessed: true,
+    product_specific: true,
+    privileged: false,
+    enforce_uses_libs: false,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "ArdaApp_GmsCoreAuto",
+    apk: "files/product/priv-app/GmsCoreAuto/GmsCoreAuto.apk",
+    presigned: true,
+    preprocessed: true,
+    product_specific: true,
+    privileged: true,
+    enforce_uses_libs: false,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "ArdaApp_GoogleOneTimeInitializer",
+    apk: "files/product/priv-app/GoogleOneTimeInitializer/GoogleOneTimeInitializer.apk",
+    presigned: true,
+    preprocessed: true,
+    product_specific: true,
+    privileged: true,
+    enforce_uses_libs: false,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "ArdaApp_GoogleSearchCarPrebuilt",
+    apk: "files/product/priv-app/GoogleSearchCarPrebuilt/GoogleSearchCarPrebuilt.apk",
+    presigned: true,
+    preprocessed: true,
+    skip_preprocessed_apk_checks: true,
+    product_specific: true,
+    privileged: true,
+    enforce_uses_libs: false,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "ArdaApp_GoogleServicesFramework",
+    apk: "files/product/priv-app/GoogleServicesFramework/GoogleServicesFramework.apk",
+    presigned: true,
+    preprocessed: true,
+    product_specific: true,
+    privileged: true,
+    enforce_uses_libs: false,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "ArdaApp_GoogleTemplatesHostInternal",
+    apk: "files/product/priv-app/GoogleTemplatesHostInternal/GoogleTemplatesHostInternal.apk",
+    presigned: true,
+    preprocessed: true,
+    skip_preprocessed_apk_checks: true,
+    product_specific: true,
+    privileged: true,
+    enforce_uses_libs: false,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "ArdaApp_MapsCarPrebuilt",
+    apk: "files/product/priv-app/MapsCarPrebuilt/MapsCarPrebuilt.apk",
+    presigned: true,
+    preprocessed: true,
+    product_specific: true,
+    privileged: true,
+    enforce_uses_libs: false,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "ArdaApp_PartnerSetupPrebuilt",
+    apk: "files/product/priv-app/PartnerSetupPrebuilt/PartnerSetupPrebuilt.apk",
+    presigned: true,
+    preprocessed: true,
+    product_specific: true,
+    privileged: true,
+    enforce_uses_libs: false,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "ArdaApp_PhoneskyCarPrebuilt",
+    apk: "files/product/priv-app/PhoneskyCarPrebuilt/PhoneskyCarPrebuilt.apk",
+    presigned: true,
+    preprocessed: true,
+    product_specific: true,
+    privileged: true,
+    enforce_uses_libs: false,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!--
+        ARDA Google Maps / Google Play visibility fix.
+
+        Pi previously logged:
+
+          com.google.android.apps.maps
+            -> com.android.vending BLOCKED
+
+        The working GAS emulator exposes GMS and Vending through the
+        framework force-queryable package list.
+    -->
+
+    <string-array
+        name="config_forceQueryablePackages"
+        translatable="false">
+
+        <item>com.android.settings</item>
+        <item>com.android.providers.settings</item>
+        <item>com.google.android.gms</item>
+        <item>com.android.vending</item>
+
+    </string-array>
+
+</resources>

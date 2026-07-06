@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.arda.overlay.framework.googlevisibility">
+
+    <application
+        android:hasCode="false"
+        android:label="ARDA Framework Google Visibility Overlay" />
+
+    <overlay
+        android:targetPackage="android"
+        android:isStatic="true"
+        android:priority="999" />
+
+</manifest>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ARDA Google Maps tile fix.
+
+    Google Maps loads GMS Chimera modules from:
+
+      /data/user_de/<user>/com.google.android.gms/app_chimera/
+
+    On the Raspberry Pi image the real Maps process mount namespace did not
+    contain the GMS app-data tree.
+
+    The working GAS emulator contains the same allowlist entry in product
+    sysconfig.
+
+    IMPORTANT:
+    Do not replace this scoped fix with:
+      persist.zygote.app_data_isolation=false
+-->
+<config>
+    <app-data-isolation-whitelisted-app package="com.google.android.gms" />
+</config>
