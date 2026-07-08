@@ -1,0 +1,16 @@
+android_app {
+    name: "ArdaVehicleSmokeAdapter",
+    srcs: [
+        "src/**/*.java",
+    ],
+    resource_dirs: ["res"],
+    static_libs: [
+        "arda-vehicle-adapter-sdk",
+    ],
+    platform_apis: true,
+    certificate: "platform",
+    system_ext_specific: true,
+    optimize: {
+        enabled: false,
+    },
+}

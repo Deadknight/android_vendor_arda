@@ -1,0 +1,6 @@
+subdirs = [
+    "aidl",
+    "sdk",
+    "manager",
+    "smoke-adapter",
+]

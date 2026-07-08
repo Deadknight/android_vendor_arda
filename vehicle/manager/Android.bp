@@ -1,0 +1,17 @@
+android_app {
+    name: "ArdaVehicleManager",
+    srcs: [
+        "src/**/*.java",
+    ],
+    resource_dirs: ["res"],
+    static_libs: [
+        "arda-vehicle-adapter-sdk",
+    ],
+    platform_apis: true,
+    certificate: "platform",
+    privileged: true,
+    system_ext_specific: true,
+    optimize: {
+        enabled: false,
+    },
+}

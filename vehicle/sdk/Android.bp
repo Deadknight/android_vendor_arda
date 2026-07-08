@@ -1,0 +1,10 @@
+java_library {
+    name: "arda-vehicle-adapter-sdk",
+    srcs: [
+        "src/**/*.java",
+    ],
+    static_libs: [
+        "arda.vehicle.adapter-java",
+    ],
+    platform_apis: true,
+}

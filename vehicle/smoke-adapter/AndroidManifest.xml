@@ -1,0 +1,35 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.arda.vehicle.smoke">
+
+    <application
+        android:allowBackup="false"
+        android:label="@string/app_name">
+        <service
+            android:name=".SmokeAdapterService"
+            android:exported="true"
+            android:permission="com.arda.vehicle.permission.BIND_ADAPTER">
+            <intent-filter>
+                <action android:name="com.arda.vehicle.ADAPTER" />
+            </intent-filter>
+
+            <meta-data
+                android:name="com.arda.vehicle.ADAPTER_ID"
+                android:value="arda.smoke.adapter" />
+            <meta-data
+                android:name="com.arda.vehicle.DISPLAY_NAME"
+                android:value="ARDA smoke adapter" />
+            <meta-data
+                android:name="com.arda.vehicle.API_VERSION"
+                android:value="1" />
+            <meta-data
+                android:name="com.arda.vehicle.REQUESTED_PRIORITY"
+                android:value="100" />
+            <meta-data
+                android:name="com.arda.vehicle.PUBLISH_CAPABILITIES"
+                android:value="ENERGY,HVAC_STATE" />
+            <meta-data
+                android:name="com.arda.vehicle.COMMAND_CAPABILITIES"
+                android:value="HVAC_CONTROL" />
+        </service>
+    </application>
+</manifest>

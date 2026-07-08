@@ -1,0 +1,50 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.arda.vehicle.manager"
+    android:sharedUserId="android.uid.system">
+
+    <permission
+        android:name="com.arda.vehicle.permission.BIND_ADAPTER"
+        android:protectionLevel="signature" />
+
+    <uses-permission android:name="com.arda.vehicle.permission.BIND_ADAPTER" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
+    <queries>
+        <intent>
+            <action android:name="com.arda.vehicle.ADAPTER" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="false"
+        android:directBootAware="true"
+        android:label="@string/app_name"
+        android:persistent="true">
+
+        <service
+            android:name=".ArdaVehicleManagerService"
+            android:directBootAware="true"
+            android:exported="false" />
+
+        <receiver
+            android:name=".BootReceiver"
+            android:directBootAware="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".ShellReceiver"
+            android:directBootAware="true"
+            android:exported="true"
+            android:permission="android.permission.DUMP">
+            <intent-filter>
+                <action android:name="com.arda.vehicle.manager.SHELL" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>
