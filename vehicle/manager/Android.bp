@@ -6,6 +6,7 @@ android_app {
     resource_dirs: ["res"],
     static_libs: [
         "arda-vehicle-adapter-sdk",
+        "arda-vehicle-router-proto-java",
     ],
     platform_apis: true,
     certificate: "platform",

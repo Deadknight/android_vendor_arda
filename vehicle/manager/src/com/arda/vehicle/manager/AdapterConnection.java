@@ -14,6 +14,7 @@ import com.arda.vehicle.adapter.AdapterDescriptor;
 import com.arda.vehicle.adapter.CommandAck;
 import com.arda.vehicle.adapter.IArdaVehicleAdapter;
 import com.arda.vehicle.adapter.IArdaVehicleHost;
+import com.arda.vehicle.adapter.VehicleCommand;
 import com.arda.vehicle.adapter.VehicleValue;
 import com.arda.vehicle.sdk.ArdaVehicleContract;
 
@@ -21,6 +22,8 @@ import java.util.Arrays;
 
 final class AdapterConnection implements ServiceConnection {
     interface Listener {
+        void onAdapterReady(AdapterConnection connection);
+        void onAdapterUnavailable(AdapterConnection connection, String reason);
         void onSignals(AdapterConnection connection, VehicleValue[] signals);
         void onCommandAcks(AdapterConnection connection, CommandAck[] acknowledgements);
         void onConnectionRejected(AdapterConnection connection, String reason);
@@ -63,6 +66,7 @@ final class AdapterConnection implements ServiceConnection {
                         + " priority=" + grant.priority
                         + " publish=" + Arrays.toString(grant.publishCapabilities)
                         + " commands=" + Arrays.toString(grant.commandCapabilities));
+                mListener.onAdapterReady(AdapterConnection.this);
             } catch (RuntimeException e) {
                 mListener.onConnectionRejected(
                         AdapterConnection.this,
@@ -147,6 +151,33 @@ final class AdapterConnection implements ServiceConnection {
         }
     }
 
+    boolean matches(AdapterCandidate candidate, AdapterGrant grant) {
+        return this.candidate.sameBinding(candidate)
+                && this.grant.sameRuntimeConfig(grant);
+    }
+
+    boolean deliverCommands(VehicleCommand[] commands) {
+        IArdaVehicleAdapter adapter;
+        synchronized (mStateLock) {
+            if (mClosed || !mReady || mAdapter == null) {
+                return false;
+            }
+            adapter = mAdapter;
+        }
+        try {
+            adapter.onVehicleCommands(commands);
+            Slog.i(TAG, "ARDA_VM_COMMAND_DELIVER source=" + grant.sourceId
+                    + " component=" + candidate.component.flattenToShortString()
+                    + " count=" + commands.length);
+            return true;
+        } catch (RemoteException e) {
+            mListener.onConnectionRejected(
+                    this,
+                    "command transaction failed: " + e.getMessage());
+            return false;
+        }
+    }
+
     @Override
     public void onServiceConnected(ComponentName name, IBinder service) {
         IArdaVehicleAdapter adapter = IArdaVehicleAdapter.Stub.asInterface(service);
@@ -187,6 +218,7 @@ final class AdapterConnection implements ServiceConnection {
             mReady = false;
         }
         Slog.w(TAG, "ARDA_VM_ADAPTER_DISCONNECTED component=" + name.flattenToShortString());
+        mListener.onAdapterUnavailable(this, "service disconnected");
     }
 
     @Override

@@ -1,0 +1,16 @@
+type arda_vehicle_manager, domain, coredomain, mlstrustedsubject;
+
+app_domain(arda_vehicle_manager)
+binder_service(arda_vehicle_manager)
+
+allow arda_vehicle_manager system_app_data_file:dir create_dir_perms;
+allow arda_vehicle_manager system_app_data_file:{ file lnk_file } create_file_perms;
+
+allow arda_vehicle_manager servicemanager:service_manager list;
+allow arda_vehicle_manager { activity_service package_service }:service_manager find;
+
+# init creates the listening socket with arda_vehicle_router_socket as its
+# unix_stream_socket object context. Grant only pathname write + connectto to
+# that dedicated endpoint type.
+allow arda_vehicle_manager arda_vehicle_router_socket:sock_file write;
+allow arda_vehicle_manager arda_vehicle_router_socket:unix_stream_socket connectto;

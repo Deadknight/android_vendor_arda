@@ -1,0 +1,18 @@
+type arda_vehicle_router, domain, coredomain, mlstrustedsubject;
+type arda_vehicle_router_exec, system_file_type, exec_type, file_type;
+type arda_vehicle_router_socket, file_type, coredomain_socket, mlstrustedobject;
+
+init_daemon_domain(arda_vehicle_router)
+
+allow init arda_vehicle_router_socket:unix_stream_socket { create bind listen };
+allow arda_vehicle_router arda_vehicle_router_socket:unix_stream_socket { read write getattr getopt accept };
+allow arda_vehicle_router kmsg_debug_device:chr_file { w_file_perms getattr ioctl };
+
+# Wasmtime compiles the active vehicle policy module at runtime. Keep anonymous
+# executable memory permission confined to the dedicated router domain.
+allow arda_vehicle_router self:process execmem;
+
+userdebug_or_eng(`
+  allow su arda_vehicle_router_socket:sock_file write;
+  allow su arda_vehicle_router_socket:unix_stream_socket connectto;
+')

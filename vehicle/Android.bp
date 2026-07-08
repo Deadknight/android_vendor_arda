@@ -1,5 +1,7 @@
 subdirs = [
     "aidl",
+    "router-proto",
+    "router-service",
     "sdk",
     "manager",
     "smoke-adapter",

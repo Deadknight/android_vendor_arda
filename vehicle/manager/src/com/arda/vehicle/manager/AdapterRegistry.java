@@ -9,7 +9,6 @@ import com.arda.vehicle.adapter.CommandAck;
 import com.arda.vehicle.adapter.VehicleValue;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +19,7 @@ final class AdapterRegistry implements AdapterConnection.Listener {
     private final Context mContext;
     private final AdapterDiscovery mDiscovery;
     private final GrantStore mGrantStore;
+    private final RouterBridge mRouterBridge;
     private final Object mLock = new Object();
     private final ArrayMap<String, AdapterConnection> mConnections = new ArrayMap<>();
     private int mCurrentUserId = -1;
@@ -28,6 +28,7 @@ final class AdapterRegistry implements AdapterConnection.Listener {
         mContext = context;
         mDiscovery = new AdapterDiscovery(context);
         mGrantStore = grantStore;
+        mRouterBridge = new RouterBridge();
     }
 
     void rescan(int userId) {
@@ -39,7 +40,7 @@ final class AdapterRegistry implements AdapterConnection.Listener {
 
         synchronized (mLock) {
             if (mCurrentUserId != userId) {
-                closeAllLocked();
+                closeAllLocked("user changed");
                 mCurrentUserId = userId;
             }
 
@@ -56,19 +57,31 @@ final class AdapterRegistry implements AdapterConnection.Listener {
                     continue;
                 }
                 desired.add(grant.key());
-                if (mConnections.containsKey(grant.key())) {
-                    continue;
+                AdapterConnection existing = mConnections.get(grant.key());
+                if (existing != null) {
+                    if (existing.matches(candidate, grant)) {
+                        continue;
+                    }
+                    mConnections.remove(grant.key());
+                    mRouterBridge.deactivate(existing, "candidate or grant changed");
+                    existing.close();
                 }
                 AdapterConnection connection = new AdapterConnection(
                         mContext,
                         candidate,
                         grant,
                         this);
+                // Publish the connection as current before bindServiceAsUser(). Service callbacks
+                // are normally asynchronous, but correctness must not depend on callback timing.
+                mConnections.put(grant.key(), connection);
                 if (!connection.bind()) {
+                    if (mConnections.get(grant.key()) == connection) {
+                        mConnections.remove(grant.key());
+                    }
+                    connection.close();
                     Slog.e(TAG, "ARDA_VM_BIND_FAILED " + grant.summary());
                     continue;
                 }
-                mConnections.put(grant.key(), connection);
                 Slog.i(TAG, "ARDA_VM_BIND_REQUEST " + grant.summary());
             }
 
@@ -76,6 +89,7 @@ final class AdapterRegistry implements AdapterConnection.Listener {
                 String key = mConnections.keyAt(index);
                 if (!desired.contains(key)) {
                     AdapterConnection connection = mConnections.removeAt(index);
+                    mRouterBridge.deactivate(connection, "grant no longer desired");
                     connection.close();
                 }
             }
@@ -113,11 +127,13 @@ final class AdapterRegistry implements AdapterConnection.Listener {
             }
         }
         for (AdapterGrant grant : grants.values()) {
-            boolean found = candidates.stream().anyMatch(candidate -> candidate.key().equals(grant.key()));
+            boolean found = candidates.stream()
+                    .anyMatch(candidate -> candidate.key().equals(grant.key()));
             if (!found) {
                 output.append("\nORPHAN_GRANT ").append(grant.summary());
             }
         }
+        output.append("\n").append(mRouterBridge.describe());
         return output.toString();
     }
 
@@ -131,17 +147,36 @@ final class AdapterRegistry implements AdapterConnection.Listener {
     }
 
     @Override
+    public void onAdapterReady(AdapterConnection connection) {
+        synchronized (mLock) {
+            AdapterConnection current = mConnections.get(connection.grant.key());
+            if (current != connection || !connection.isReady()) {
+                Slog.w(TAG, "ARDA_VM_ADAPTER_READY_DROP source=" + connection.grant.sourceId
+                        + " reason=stale_connection");
+                return;
+            }
+            // Keep the registry lock through activation so a concurrent revoke/user switch cannot
+            // deactivate before the source link exists and then leave a stale link behind.
+            mRouterBridge.activate(connection);
+        }
+    }
+
+    @Override
+    public void onAdapterUnavailable(AdapterConnection connection, String reason) {
+        mRouterBridge.deactivate(connection, reason);
+    }
+
+    @Override
     public void onSignals(AdapterConnection connection, VehicleValue[] signals) {
         for (VehicleValue value : signals) {
-            Slog.i(TAG, "ARDA_VM_SIGNAL_ACCEPT source=" + connection.grant.sourceId
+            Slog.d(TAG, "ARDA_VM_SIGNAL_ACCEPT source=" + connection.grant.sourceId
                     + " component=" + connection.candidate.component.flattenToShortString()
                     + " property=" + value.propertyId
                     + " area=" + value.areaId
                     + " type=" + value.valueType
                     + " ts=" + value.timestampNanos);
         }
-        // Phase 2.1: frame these values into arda.vehicle.router.v2.VehicleSignals.
-        // vehicle-routerd remains the authoritative property/capability validator.
+        mRouterBridge.publish(connection, signals);
     }
 
     @Override
@@ -152,7 +187,7 @@ final class AdapterRegistry implements AdapterConnection.Listener {
                     + " status=" + ack.status
                     + " error=\"" + ack.error + "\"");
         }
-        // Phase 2.1: forward acknowledgements to vehicle-routerd.
+        mRouterBridge.acknowledge(connection, acknowledgements);
     }
 
     @Override
@@ -160,17 +195,21 @@ final class AdapterRegistry implements AdapterConnection.Listener {
         Slog.e(TAG, "ARDA_VM_ADAPTER_REJECT component="
                 + connection.candidate.component.flattenToShortString()
                 + " reason=" + reason);
+        mRouterBridge.deactivate(connection, "adapter rejected: " + reason);
         synchronized (mLock) {
-            AdapterConnection current = mConnections.remove(connection.grant.key());
-            if (current != null) {
+            AdapterConnection current = mConnections.get(connection.grant.key());
+            if (current == connection) {
+                mConnections.remove(connection.grant.key());
                 current.close();
             }
         }
     }
 
-    private void closeAllLocked() {
+    private void closeAllLocked(String reason) {
         for (int index = mConnections.size() - 1; index >= 0; index--) {
-            mConnections.valueAt(index).close();
+            AdapterConnection connection = mConnections.valueAt(index);
+            mRouterBridge.deactivate(connection, reason);
+            connection.close();
         }
         mConnections.clear();
     }

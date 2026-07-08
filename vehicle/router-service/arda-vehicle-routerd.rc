@@ -1,0 +1,6 @@
+service arda_vehicle_router /system_ext/bin/arda-senderd vehicle-routerd
+    class main
+    user root
+    group root system
+    socket arda_vehicle_router stream+listen 0660 root system u:object_r:arda_vehicle_router_socket:s0
+    stdio_to_kmsg

@@ -37,6 +37,17 @@ final class AdapterGrant {
         return userId + ":" + component.flattenToShortString();
     }
 
+    boolean sameRuntimeConfig(AdapterGrant other) {
+        return other != null
+                && userId == other.userId
+                && component.equals(other.component)
+                && sourceId == other.sourceId
+                && signerAnchor.equals(other.signerAnchor)
+                && priority == other.priority
+                && Arrays.equals(publishCapabilities, other.publishCapabilities)
+                && Arrays.equals(commandCapabilities, other.commandCapabilities);
+    }
+
     String summary() {
         return "user=" + userId
                 + " component=" + component.flattenToShortString()

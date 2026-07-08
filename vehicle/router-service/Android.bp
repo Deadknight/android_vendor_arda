@@ -1,0 +1,12 @@
+cc_prebuilt_binary {
+    name: "arda-vehicle-routerd",
+    srcs: ["prebuilt/arda-senderd"],
+    stem: "arda-senderd",
+    compile_multilib: "64",
+    system_ext_specific: true,
+    init_rc: ["arda-vehicle-routerd.rc"],
+    strip: {
+        none: true,
+    },
+    check_elf_files: false,
+}

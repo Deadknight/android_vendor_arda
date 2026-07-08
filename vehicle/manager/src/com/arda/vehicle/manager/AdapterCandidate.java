@@ -43,6 +43,20 @@ final class AdapterCandidate {
         return userId + ":" + component.flattenToShortString();
     }
 
+    boolean sameBinding(AdapterCandidate other) {
+        return other != null
+                && userId == other.userId
+                && component.equals(other.component)
+                && uid == other.uid
+                && adapterId.equals(other.adapterId)
+                && displayName.equals(other.displayName)
+                && apiVersion == other.apiVersion
+                && requestedPriority == other.requestedPriority
+                && Arrays.equals(publishCapabilities, other.publishCapabilities)
+                && Arrays.equals(commandCapabilities, other.commandCapabilities)
+                && signingIdentity.summary().equals(other.signingIdentity.summary());
+    }
+
     String summary() {
         return "user=" + userId
                 + " component=" + component.flattenToShortString()
