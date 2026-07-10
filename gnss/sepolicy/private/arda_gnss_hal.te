@@ -1,0 +1,13 @@
+type arda_gnss_hal, domain, coredomain;
+type arda_gnss_hal_exec, system_file_type, exec_type, file_type;
+
+init_daemon_domain(arda_gnss_hal)
+hal_server_domain(arda_gnss_hal, hal_gnss)
+
+allow arda_gnss_hal self:unix_stream_socket create_stream_socket_perms;
+allow arda_vehicle_router arda_gnss_hal:unix_stream_socket connectto;
+
+userdebug_or_eng(`
+    allow shell arda_gnss_hal:unix_stream_socket connectto;
+    allow su arda_gnss_hal:unix_stream_socket connectto;
+')
