@@ -2,4 +2,5 @@
 
 PRODUCT_PACKAGES += \
     ArdaVehicleManager \
-    arda-vehicle-routerd
+    arda-vehicle-routerd \
+    arda-vhal-proxy-service

@@ -1,0 +1,22 @@
+cc_binary {
+    name: "arda-vhal-proxy-service",
+    stem: "arda-vhal-proxyd",
+    system_ext_specific: true,
+    defaults: [
+        "VehicleHalDefaults",
+    ],
+    srcs: [
+        "ArdaVehicleProxy.cpp",
+        "VehicleProxyService.cpp",
+    ],
+    init_rc: ["arda-vhal-proxy-service.rc"],
+    vintf_fragments: ["arda-vhal-proxy.xml"],
+    static_libs: [
+        "arda-vehicle-router-proto-cpp",
+        "libprotobuf-cpp-lite",
+        "VehicleHalUtils",
+    ],
+    shared_libs: [
+        "libbinder_ndk",
+    ],
+}

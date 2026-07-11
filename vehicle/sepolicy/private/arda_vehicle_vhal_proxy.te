@@ -1,0 +1,9 @@
+type arda_vehicle_vhal_proxy, domain, coredomain;
+type arda_vehicle_vhal_proxy_exec, system_file_type, exec_type, file_type;
+
+init_daemon_domain(arda_vehicle_vhal_proxy)
+hal_server_domain(arda_vehicle_vhal_proxy, hal_vehicle)
+hal_client_domain(arda_vehicle_vhal_proxy, hal_vehicle)
+
+allow arda_vehicle_vhal_proxy arda_vehicle_router_socket:sock_file write;
+allow arda_vehicle_vhal_proxy arda_vehicle_router_socket:unix_stream_socket connectto;

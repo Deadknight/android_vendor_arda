@@ -1,2 +1,3 @@
 /(system_ext|system/system_ext)/bin/arda-senderd u:object_r:arda_vehicle_router_exec:s0
 /dev/socket/arda_vehicle_router u:object_r:arda_vehicle_router_socket:s0
+/(system_ext|system/system_ext)/bin/arda-vhal-proxyd u:object_r:arda_vehicle_vhal_proxy_exec:s0

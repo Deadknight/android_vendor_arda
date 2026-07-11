@@ -5,4 +5,6 @@ subdirs = [
     "sdk",
     "manager",
     "smoke-adapter",
+    "vhal-base",
+    "vhal-proxy",
 ]

@@ -1,0 +1,24 @@
+cc_binary {
+    name: "arda-vhal-base-service",
+    stem: "arda-vhal-base-service",
+    vendor: true,
+    defaults: [
+        "FakeVehicleHardwareDefaults",
+        "VehicleHalDefaults",
+        "android-automotive-large-parcelable-defaults",
+    ],
+    init_rc: ["arda-vhal-base-service.rc"],
+    relative_install_path: "hw",
+    srcs: ["VehicleBaseService.cpp"],
+    static_libs: [
+        "DefaultVehicleHal",
+        "FakeVehicleHardware",
+        "VehicleHalUtils",
+    ],
+    header_libs: [
+        "IVehicleHardware",
+    ],
+    shared_libs: [
+        "libbinder_ndk",
+    ],
+}
