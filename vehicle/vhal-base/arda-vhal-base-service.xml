@@ -3,5 +3,6 @@
         <name>android.hardware.automotive.vehicle</name>
         <version>4</version>
         <fqname>IVehicle/default</fqname>
+        <fqname>IVehicle/arda_base</fqname>
     </hal>
 </manifest>

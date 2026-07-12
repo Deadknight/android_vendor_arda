@@ -1,4 +1,5 @@
 service vendor.vehicle-hal-arda-base /vendor/bin/hw/arda-vhal-base-service
     class early_hal
+    interface aidl android.hardware.automotive.vehicle.IVehicle/arda_base
     user vehicle_network
     group system inet

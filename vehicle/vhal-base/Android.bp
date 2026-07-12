@@ -8,6 +8,7 @@ cc_binary {
         "android-automotive-large-parcelable-defaults",
     ],
     init_rc: ["arda-vhal-base-service.rc"],
+    vintf_fragments: ["arda-vhal-base-service.xml"],
     relative_install_path: "hw",
     srcs: ["VehicleBaseService.cpp"],
     static_libs: [

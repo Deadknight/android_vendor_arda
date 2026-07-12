@@ -1,4 +1,5 @@
 service arda_vehicle_vhal_proxy /system_ext/bin/arda-vhal-proxyd
     class early_hal
+    interface aidl android.hardware.automotive.vehicle.IVehicle/default
     user vehicle_network
     group system inet

@@ -10,7 +10,6 @@ cc_binary {
         "VehicleProxyService.cpp",
     ],
     init_rc: ["arda-vhal-proxy-service.rc"],
-    vintf_fragments: ["arda-vhal-proxy.xml"],
     static_libs: [
         "arda-vehicle-router-proto-cpp",
         "libprotobuf-cpp-lite",
