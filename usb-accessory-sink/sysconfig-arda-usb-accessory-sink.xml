@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <install-in-user-type package="com.github.deadknight.ardausbaccessorysink">
+        <install-in user-type="SYSTEM" />
+        <install-in user-type="FULL" />
+        <do-not-install-in user-type="PROFILE" />
+    </install-in-user-type>
+</config>

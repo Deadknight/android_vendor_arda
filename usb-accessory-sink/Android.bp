@@ -1,0 +1,21 @@
+android_app {
+    name: "ArdaUsbAccessorySink",
+    manifest: "AndroidManifest.xml",
+    srcs: ["src/**/*.java"],
+    resource_dirs: ["res"],
+    certificate: "platform",
+    product_specific: true,
+    sdk_version: "system_current",
+    min_sdk_version: "31",
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+prebuilt_etc {
+    name: "arda_usb_accessory_sink_sysconfig",
+    src: "sysconfig-arda-usb-accessory-sink.xml",
+    filename_from_src: true,
+    sub_dir: "sysconfig",
+    product_specific: true,
+}

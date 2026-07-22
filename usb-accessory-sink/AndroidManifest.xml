@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.github.deadknight.ardausbaccessorysink">
+
+    <uses-permission android:name="android.permission.MANAGE_USB" />
+
+    <uses-feature
+        android:name="android.hardware.usb.accessory"
+        android:required="false" />
+
+    <application
+        android:allowBackup="false"
+        android:defaultToDeviceProtectedStorage="true"
+        android:directBootAware="true"
+        android:label="@string/app_name"
+        android:supportsRtl="true">
+
+        <activity
+            android:name=".UsbAccessorySinkActivity"
+            android:directBootAware="true"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.NoDisplay">
+
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED"
+                android:resource="@xml/arda_aoap_accessory_filter" />
+
+            <meta-data
+                android:name="distractionOptimized"
+                android:value="true" />
+        </activity>
+
+        <receiver
+            android:name=".UsbAccessoryDetachReceiver"
+            android:directBootAware="true"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_ACCESSORY_DETACHED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>
