@@ -87,6 +87,12 @@ final class SigningIdentity {
         return "lineage:" + signingHistoryDigests;
     }
 
+    String displaySummary() {
+        String digest = currentSignerDigests.isEmpty() ? "" : currentSignerDigests.get(0);
+        String shortDigest = digest.length() > 12 ? digest.substring(0, 12) + "…" : digest;
+        return multipleSigners ? "Multiple signers · " + shortDigest : "Signer · " + shortDigest;
+    }
+
     private static List<String> digestAll(Signature[] signatures) {
         if (signatures == null || signatures.length == 0) {
             return Collections.emptyList();

@@ -47,7 +47,7 @@ using ::aidl::android::hardware::automotive::vehicle::VehiclePropertyStatus;
 using ::aidl::android::hardware::automotive::vehicle::VehiclePropValue;
 using ::ndk::ScopedAStatus;
 
-constexpr uint32_t kRouterProtocolVersion = 2;
+constexpr uint32_t kRouterProtocolVersion = 3;
 constexpr uint32_t kMaxFrameBytes = 1024 * 1024;
 constexpr const char* kRouterSocket = "/dev/socket/arda_vehicle_router";
 constexpr const char* kRouterClientName = "arda-vhal-proxy";
@@ -59,6 +59,8 @@ constexpr int32_t kParkingBrakeOn = 287310850;
 constexpr int32_t kGearSelection = 289408000;
 constexpr int32_t kNightMode = 287310855;
 constexpr int32_t kEtcCardStatus = 289410874;
+constexpr int32_t kInfoFuelType = 289472773;
+constexpr int32_t kInfoEvConnectorType = 289472775;
 
 const std::vector<int32_t> kOverlayProps = {
         kPerfVehicleSpeed,
@@ -264,6 +266,76 @@ bool ArdaVehicleProxy::isOverlayProperty(int32_t propId) {
     return std::find(kOverlayProps.begin(), kOverlayProps.end(), propId) != kOverlayProps.end();
 }
 
+bool ArdaVehicleProxy::isVehicleInfoProperty(int32_t propId) {
+    return propId == kInfoFuelType || propId == kInfoEvConnectorType;
+}
+
+bool ArdaVehicleProxy::applyVehicleInfo(
+        const std::vector<int32_t>& fuelTypes,
+        const std::vector<int32_t>& connectorTypes,
+        std::string* error) {
+    static const std::set<int32_t> kAllowedFuelTypes = {
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+    };
+    static const std::set<int32_t> kAllowedConnectorTypes = {
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 101,
+    };
+    auto reject = [error](const std::string& message) {
+        if (error != nullptr) {
+            *error = message;
+        }
+        return false;
+    };
+    if (fuelTypes.empty() || fuelTypes.size() > 4) {
+        return reject("fuel type list must contain 1..4 values");
+    }
+    if (connectorTypes.empty() || connectorTypes.size() > 16) {
+        return reject("connector type list must contain 1..16 values");
+    }
+    std::set<int32_t> uniqueFuel;
+    for (int32_t value : fuelTypes) {
+        if (!kAllowedFuelTypes.count(value) || !uniqueFuel.insert(value).second) {
+            return reject("invalid or duplicate fuel type=" + std::to_string(value));
+        }
+    }
+    std::set<int32_t> uniqueConnector;
+    for (int32_t value : connectorTypes) {
+        if (!kAllowedConnectorTypes.count(value) || !uniqueConnector.insert(value).second) {
+            return reject("invalid or duplicate connector type=" + std::to_string(value));
+        }
+    }
+    const bool electric = uniqueFuel.count(10) != 0;
+    if (!electric && !(connectorTypes.size() == 1 && connectorTypes[0] == 0)) {
+        return reject("non-electric profile must use connector UNKNOWN");
+    }
+
+    VehiclePropValue fuelValue;
+    fuelValue.prop = kInfoFuelType;
+    fuelValue.areaId = 0;
+    fuelValue.timestamp = elapsedRealtimeNanos();
+    fuelValue.status = VehiclePropertyStatus::AVAILABLE;
+    fuelValue.value.int32Values = fuelTypes;
+
+    VehiclePropValue connectorValue;
+    connectorValue.prop = kInfoEvConnectorType;
+    connectorValue.areaId = 0;
+    connectorValue.timestamp = elapsedRealtimeNanos();
+    connectorValue.status = VehiclePropertyStatus::AVAILABLE;
+    connectorValue.value.int32Values = connectorTypes;
+
+    {
+        std::lock_guard<std::mutex> lock(mLock);
+        mVehicleInfoOverrides[{kInfoFuelType, 0}] = fuelValue;
+        mVehicleInfoOverrides[{kInfoEvConnectorType, 0}] = connectorValue;
+    }
+    ALOGI("ARDA_VHAL_PROXY_VEHICLE_INFO_APPLIED fuel_count=%zu connector_count=%zu",
+          fuelTypes.size(), connectorTypes.size());
+    if (error != nullptr) {
+        error->clear();
+    }
+    return true;
+}
+
 ScopedAStatus ArdaVehicleProxy::getAllPropConfigs(VehiclePropConfigs* returnConfigs) {
     return mBase->getAllPropConfigs(returnConfigs);
 }
@@ -298,6 +370,30 @@ ScopedAStatus ArdaVehicleProxy::getValues(
         const auto key = std::make_pair(request.prop.prop, request.prop.areaId);
         if (!requestedProps.insert(key).second) {
             return serviceError(StatusCode::INVALID_ARG, "duplicate get property and area");
+        }
+
+        if (isVehicleInfoProperty(request.prop.prop)) {
+            bool overridden = false;
+            GetValueResult result{
+                    .requestId = request.requestId,
+                    .status = StatusCode::TRY_AGAIN,
+                    .prop = std::nullopt,
+            };
+            {
+                std::lock_guard<std::mutex> lock(mLock);
+                auto it = mVehicleInfoOverrides.find(key);
+                if (it != mVehicleInfoOverrides.end()) {
+                    result.status = StatusCode::OK;
+                    result.prop = it->second;
+                    overridden = true;
+                }
+            }
+            if (overridden) {
+                overlayResults.push_back(std::move(result));
+            } else {
+                baseRequests.push_back(request);
+            }
+            continue;
         }
 
         if (!isOverlayProperty(request.prop.prop)) {
@@ -512,13 +608,15 @@ ScopedAStatus ArdaVehicleProxy::unregisterSupportedValueChangeCallback(
 binder_status_t ArdaVehicleProxy::dump(int fd, const char** args, uint32_t numArgs) {
     size_t subscriptionCount = 0;
     size_t cacheCount = 0;
+    size_t vehicleInfoOverrideCount = 0;
     {
         std::lock_guard<std::mutex> lock(mLock);
         subscriptionCount = mSubscriptions.size();
         cacheCount = mLatestValues.size();
+        vehicleInfoOverrideCount = mVehicleInfoOverrides.size();
     }
-    dprintf(fd, "ARDA VHAL proxy: router_fd=%d subscriptions=%zu cached_values=%zu\n",
-            mRouterFd.load(), subscriptionCount, cacheCount);
+    dprintf(fd, "ARDA VHAL proxy: router_fd=%d subscriptions=%zu cached_values=%zu vehicle_info_overrides=%zu\n",
+            mRouterFd.load(), subscriptionCount, cacheCount, vehicleInfoOverrideCount);
     return AIBinder_dump(mBase->asBinder().get(), fd, args, numArgs);
 }
 
@@ -629,6 +727,26 @@ void ArdaVehicleProxy::routerLoop() {
                 if (!values.empty()) {
                     ALOGI("ARDA_VHAL_PROXY_ROUTER_EVENTS count=%zu", values.size());
                     handleRouterEvents(values);
+                }
+                continue;
+            }
+
+            if (envelope.has_vehicle_info_apply_request()) {
+                const auto& request = envelope.vehicle_info_apply_request();
+                std::vector<int32_t> fuelTypes(
+                        request.fuel_types().begin(), request.fuel_types().end());
+                std::vector<int32_t> connectorTypes(
+                        request.connector_types().begin(), request.connector_types().end());
+                std::string error;
+                const bool applied = applyVehicleInfo(fuelTypes, connectorTypes, &error);
+                routerpb::Envelope resultEnvelope;
+                resultEnvelope.set_protocol_version(kRouterProtocolVersion);
+                auto* result = resultEnvelope.mutable_vehicle_info_apply_result();
+                result->set_request_id(request.request_id());
+                result->set_applied(applied);
+                result->set_error(error);
+                if (!writeEnvelope(fd, resultEnvelope)) {
+                    break;
                 }
                 continue;
             }

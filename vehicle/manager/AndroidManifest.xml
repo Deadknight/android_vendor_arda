@@ -6,6 +6,10 @@
         android:name="com.arda.vehicle.permission.BIND_ADAPTER"
         android:protectionLevel="signature" />
 
+    <permission
+        android:name="com.arda.vehicle.permission.MANAGE_SOURCES"
+        android:protectionLevel="signature|privileged" />
+
     <uses-permission android:name="com.arda.vehicle.permission.BIND_ADAPTER" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS_FULL" />
@@ -25,12 +29,15 @@
         <service
             android:name=".ArdaVehicleManagerService"
             android:directBootAware="true"
-            android:exported="false" />
+            android:exported="true"
+            android:permission="com.arda.vehicle.permission.MANAGE_SOURCES"
+            android:singleUser="true" />
 
         <receiver
             android:name=".BootReceiver"
             android:directBootAware="true"
-            android:exported="false">
+            android:exported="false"
+            android:singleUser="true">
             <intent-filter>
                 <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -41,7 +48,8 @@
             android:name=".ShellReceiver"
             android:directBootAware="true"
             android:exported="true"
-            android:permission="android.permission.DUMP">
+            android:permission="android.permission.DUMP"
+            android:singleUser="true">
             <intent-filter>
                 <action android:name="com.arda.vehicle.manager.SHELL" />
             </intent-filter>

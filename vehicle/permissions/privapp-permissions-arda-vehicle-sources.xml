@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<permissions>
+    <privapp-permissions package="com.github.deadknight.ardaplatform.debug">
+        <permission name="com.arda.vehicle.permission.MANAGE_SOURCES" />
+    </privapp-permissions>
+    <privapp-permissions package="com.github.deadknight.ardaplatform">
+        <permission name="com.arda.vehicle.permission.MANAGE_SOURCES" />
+    </privapp-permissions>
+</permissions>

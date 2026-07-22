@@ -3,7 +3,13 @@ package com.arda.inputbridge;
 import android.app.Application;
 import android.hardware.input.InputManager;
 import android.hardware.input.InputManagerGlobal;
+import android.net.Credentials;
+import android.net.LocalServerSocket;
+import android.net.LocalSocket;
+import android.net.LocalSocketAddress;
+import android.os.Process;
 import android.os.SystemClock;
+import android.os.UserHandle;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.InputEvent;
@@ -14,22 +20,24 @@ import android.view.MotionEvent;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 public final class ArdaInputApplication extends Application {
     private static final String TAG = "ArdaInputBridge";
-    private static final int PORT = 5276;
+    private static final String SOCKET_NAME = "arda_input_bridge";
 
     @Override
     public void onCreate() {
         super.onCreate();
 
-        Thread serverThread = new Thread(ArdaInputApplication::runServer, "arda-input-bridge");
+        if (UserHandle.myUserId() != UserHandle.USER_SYSTEM) {
+            Log.i(TAG, "server disabled for non-system user=" + UserHandle.myUserId());
+            return;
+        }
+
+        Thread serverThread = new Thread(
+                ArdaInputApplication::runServer, "arda-input-bridge");
         serverThread.setDaemon(false);
         serverThread.start();
     }
@@ -44,15 +52,24 @@ public final class ArdaInputApplication extends Application {
         }
 
         while (true) {
-            try (ServerSocket server = new ServerSocket()) {
-                server.setReuseAddress(true);
-                server.bind(new InetSocketAddress(InetAddress.getByName("127.0.0.1"), PORT), 1);
-                Log.i(TAG, "READY addr=" + server.getLocalSocketAddress() + " uid=" + android.os.Process.myUid());
+            try (BoundServer boundServer = BoundServer.open()) {
+                Log.i(TAG, "READY transport=unix-abstract name="
+                        + SOCKET_NAME
+                        + " allowed_uid=" + Process.ROOT_UID
+                        + " uid=" + Process.myUid());
 
                 while (true) {
-                    try (Socket socket = server.accept()) {
-                        socket.setTcpNoDelay(true);
-                        Log.i(TAG, "client connected remote=" + socket.getRemoteSocketAddress());
+                    try (LocalSocket socket = boundServer.accept()) {
+                        Credentials peer = socket.getPeerCredentials();
+                        int peerUid = peer.getUid();
+                        int peerPid = peer.getPid();
+
+                        if (peerUid != Process.ROOT_UID) {
+                            Log.w(TAG, "rejected peer uid=" + peerUid + " pid=" + peerPid);
+                            continue;
+                        }
+
+                        Log.i(TAG, "client accepted uid=" + peerUid + " pid=" + peerPid);
                         bridge.handleClient(socket);
                     } catch (Throwable t) {
                         bridge.cancelActiveTouch();
@@ -61,8 +78,59 @@ public final class ArdaInputApplication extends Application {
                 }
             } catch (Throwable t) {
                 bridge.cancelActiveTouch();
-                Log.e(TAG, "server failed; retrying", t);
+                Log.e(TAG, "server failed; retrying name=" + SOCKET_NAME, t);
                 SystemClock.sleep(1000);
+            }
+        }
+    }
+
+    private static final class BoundServer implements AutoCloseable {
+        private final LocalSocket ownerSocket;
+        private final LocalServerSocket serverSocket;
+
+        private BoundServer(
+                LocalSocket ownerSocket,
+                LocalServerSocket serverSocket) {
+            this.ownerSocket = ownerSocket;
+            this.serverSocket = serverSocket;
+        }
+
+        static BoundServer open() throws Exception {
+            LocalSocket ownerSocket = new LocalSocket(LocalSocket.SOCKET_STREAM);
+            boolean success = false;
+            try {
+                LocalSocketAddress address = new LocalSocketAddress(
+                        SOCKET_NAME,
+                        LocalSocketAddress.Namespace.ABSTRACT);
+                ownerSocket.bind(address);
+
+                LocalServerSocket serverSocket =
+                        new LocalServerSocket(ownerSocket.getFileDescriptor());
+                success = true;
+                return new BoundServer(ownerSocket, serverSocket);
+            } finally {
+                if (!success) {
+                    try {
+                        ownerSocket.close();
+                    } catch (Throwable ignored) {
+                    }
+                }
+            }
+        }
+
+        LocalSocket accept() throws IOException {
+            return serverSocket.accept();
+        }
+
+        @Override
+        public void close() {
+            try {
+                serverSocket.close();
+            } catch (Throwable ignored) {
+            }
+            try {
+                ownerSocket.close();
+            } catch (Throwable ignored) {
             }
         }
     }
@@ -80,7 +148,7 @@ public final class ArdaInputApplication extends Application {
         private float lastY;
         private int displayId;
 
-        void handleClient(Socket socket) throws IOException {
+        void handleClient(LocalSocket socket) throws IOException {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                     socket.getInputStream(), StandardCharsets.UTF_8))) {
                 String line;
@@ -249,6 +317,8 @@ public final class ArdaInputApplication extends Application {
             boolean okUp = inject(up, InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH);
             if (!(okDown && okUp)) {
                 Log.e(TAG, "key injection returned false keycode=" + keyCode);
+            } else {
+                Log.i(TAG, "key injected keycode=" + keyCode);
             }
         }
 

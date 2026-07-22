@@ -3,7 +3,6 @@
     package="com.arda.inputbridge">
 
     <uses-permission android:name="android.permission.INJECT_EVENTS" />
-    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".ArdaInputApplication"

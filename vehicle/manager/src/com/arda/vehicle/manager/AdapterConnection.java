@@ -64,8 +64,10 @@ final class AdapterConnection implements ServiceConnection {
                         + " user=" + candidate.userId
                         + " source=" + grant.sourceId
                         + " priority=" + grant.priority
-                        + " publish=" + Arrays.toString(grant.publishCapabilities)
-                        + " commands=" + Arrays.toString(grant.commandCapabilities));
+                        + " publish_caps=" + Arrays.toString(grant.publishCapabilities)
+                        + " command_caps=" + Arrays.toString(grant.commandCapabilities)
+                        + " publish_properties=" + Arrays.toString(grant.publishPropertyIds)
+                        + " command_properties=" + Arrays.toString(grant.commandPropertyIds));
                 mListener.onAdapterReady(AdapterConnection.this);
             } catch (RuntimeException e) {
                 mListener.onConnectionRejected(
@@ -79,8 +81,20 @@ final class AdapterConnection implements ServiceConnection {
         public void publishSignals(VehicleValue[] signals) {
             enforceAdapterCaller();
             enforceReady();
-            VehicleValue[] validated = validateSignals(signals);
-            mListener.onSignals(AdapterConnection.this, validated);
+            try {
+                VehicleValue[] validated = validateSignals(signals);
+                mListener.onSignals(AdapterConnection.this, validated);
+            } catch (SecurityException e) {
+                Slog.w(TAG, "ARDA_VM_SIGNAL_REJECT_PROPERTY_NOT_GRANTED component="
+                        + candidate.component.flattenToShortString()
+                        + " source=" + grant.sourceId
+                        + " reason=" + e.getMessage());
+            } catch (IllegalArgumentException e) {
+                Slog.w(TAG, "ARDA_VM_SIGNAL_REJECT_INVALID component="
+                        + candidate.component.flattenToShortString()
+                        + " source=" + grant.sourceId
+                        + " reason=" + e.getMessage());
+            }
         }
 
         @Override
@@ -157,6 +171,20 @@ final class AdapterConnection implements ServiceConnection {
     }
 
     boolean deliverCommands(VehicleCommand[] commands) {
+        if (commands == null || commands.length == 0) {
+            return false;
+        }
+        for (VehicleCommand command : commands) {
+            int propertyId = command != null && command.value != null
+                    ? command.value.propertyId : 0;
+            if (!grant.allowsCommandProperty(propertyId)) {
+                Slog.w(TAG, "ARDA_VM_COMMAND_REJECT_PROPERTY_NOT_GRANTED source="
+                        + grant.sourceId
+                        + " component=" + candidate.component.flattenToShortString()
+                        + " property=" + propertyId);
+                return false;
+            }
+        }
         IArdaVehicleAdapter adapter;
         synchronized (mStateLock) {
             if (mClosed || !mReady || mAdapter == null) {
@@ -271,6 +299,20 @@ final class AdapterConnection implements ServiceConnection {
                 CapabilityParser.sortedDistinct(descriptor.commandCapabilities))) {
             throw new IllegalArgumentException("command capability manifest/binder mismatch");
         }
+        if (!Arrays.equals(
+                candidate.requestedPublishPropertyIds,
+                PropertyIdParser.sortedDistinctPositive(
+                        descriptor.requestedPublishPropertyIds,
+                        "descriptor publish"))) {
+            throw new IllegalArgumentException("publish property manifest/binder mismatch");
+        }
+        if (!Arrays.equals(
+                candidate.requestedCommandPropertyIds,
+                PropertyIdParser.sortedDistinctPositive(
+                        descriptor.requestedCommandPropertyIds,
+                        "descriptor command"))) {
+            throw new IllegalArgumentException("command property manifest/binder mismatch");
+        }
     }
 
     private void enforceAdapterCaller() {
@@ -302,7 +344,7 @@ final class AdapterConnection implements ServiceConnection {
         }
     }
 
-    private static VehicleValue[] validateSignals(VehicleValue[] signals) {
+    private VehicleValue[] validateSignals(VehicleValue[] signals) {
         VehicleValue[] values = signals != null ? signals : new VehicleValue[0];
         if (values.length == 0 || values.length > MAX_SIGNAL_BATCH) {
             throw new IllegalArgumentException("invalid signal batch size=" + values.length);
@@ -313,6 +355,10 @@ final class AdapterConnection implements ServiceConnection {
             }
             if (value.propertyId <= 0) {
                 throw new IllegalArgumentException("invalid propertyId=" + value.propertyId);
+            }
+            if (!grant.allowsPublishProperty(value.propertyId)) {
+                throw new SecurityException(
+                        "property_not_granted=" + value.propertyId);
             }
             if (!ArdaVehicleContract.isValueType(value.valueType)) {
                 throw new IllegalArgumentException("invalid valueType=" + value.valueType);

@@ -14,3 +14,15 @@ android_app {
         enabled: false,
     },
 }
+
+cc_binary {
+    name: "arda-input-bridge-probe",
+    srcs: ["probe/arda_input_bridge_probe.cpp"],
+    system_ext_specific: true,
+    compile_multilib: "64",
+    stl: "none",
+    cflags: [
+        "-Wall",
+        "-Werror",
+    ],
+}

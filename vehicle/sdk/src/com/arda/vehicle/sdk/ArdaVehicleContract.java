@@ -20,6 +20,10 @@ public final class ArdaVehicleContract {
             "com.arda.vehicle.PUBLISH_CAPABILITIES";
     public static final String META_COMMAND_CAPABILITIES =
             "com.arda.vehicle.COMMAND_CAPABILITIES";
+    public static final String META_PUBLISH_PROPERTIES =
+            "com.arda.vehicle.PUBLISH_PROPERTIES";
+    public static final String META_COMMAND_PROPERTIES =
+            "com.arda.vehicle.COMMAND_PROPERTIES";
 
     public static final int VALUE_UNSPECIFIED = 0;
     public static final int VALUE_BOOL = 1;

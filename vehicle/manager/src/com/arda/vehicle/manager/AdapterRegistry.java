@@ -7,6 +7,7 @@ import android.util.Slog;
 
 import com.arda.vehicle.adapter.CommandAck;
 import com.arda.vehicle.adapter.VehicleValue;
+import com.arda.vehicle.admin.VehicleSourceInfo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,6 +47,10 @@ final class AdapterRegistry implements AdapterConnection.Listener {
 
             List<String> desired = new ArrayList<>();
             for (AdapterGrant grant : mGrantStore.listForUser(userId)) {
+                if (!grant.enabled) {
+                    Slog.i(TAG, "ARDA_VM_SOURCE_DISABLED " + grant.summary());
+                    continue;
+                }
                 AdapterCandidate candidate = byKey.get(grant.key());
                 if (candidate == null) {
                     Slog.w(TAG, "ARDA_VM_GRANT_INACTIVE reason=component_missing " + grant.summary());
@@ -54,6 +59,11 @@ final class AdapterRegistry implements AdapterConnection.Listener {
                 if (!candidate.signingIdentity.acceptsGrantAnchor(grant.signerAnchor)) {
                     Slog.e(TAG, "ARDA_VM_GRANT_REJECT reason=signer_mismatch " + grant.summary()
                             + " current=" + candidate.signingIdentity.summary());
+                    continue;
+                }
+                if (!grant.isCompatibleWith(candidate)) {
+                    Slog.e(TAG, "ARDA_VM_GRANT_REJECT reason=request_contract_changed "
+                            + grant.summary() + " current=" + candidate.summary());
                     continue;
                 }
                 desired.add(grant.key());
@@ -110,6 +120,10 @@ final class AdapterRegistry implements AdapterConnection.Listener {
             AdapterGrant grant = grants.get(candidate.key());
             boolean signerOk = grant != null
                     && candidate.signingIdentity.acceptsGrantAnchor(grant.signerAnchor);
+            boolean requestCompatible = grant != null && grant.isCompatibleWith(candidate);
+            boolean additionalApproval = grant != null
+                    && requestCompatible
+                    && candidate.hasAdditionalRequests(grant);
             boolean connected;
             boolean ready;
             synchronized (mLock) {
@@ -117,9 +131,21 @@ final class AdapterRegistry implements AdapterConnection.Listener {
                 connected = connection != null;
                 ready = connection != null && connection.isReady();
             }
+            String state = grant == null
+                    ? "PENDING_APPROVAL"
+                    : !signerOk
+                            ? "SIGNATURE_CHANGED"
+                            : !requestCompatible
+                                    ? "REQUEST_CONTRACT_CHANGED"
+                                    : !grant.enabled
+                                            ? "DISABLED"
+                                            : ready ? "ACTIVE" : "APPROVED";
             output.append("\nCANDIDATE ").append(candidate.summary())
+                    .append(" state=").append(state)
                     .append(" granted=").append(grant != null)
                     .append(" signer_ok=").append(signerOk)
+                    .append(" request_compatible=").append(requestCompatible)
+                    .append(" additional_approval=").append(additionalApproval)
                     .append(" connected=").append(connected)
                     .append(" ready=").append(ready);
             if (grant != null) {
@@ -135,6 +161,117 @@ final class AdapterRegistry implements AdapterConnection.Listener {
         }
         output.append("\n").append(mRouterBridge.describe());
         return output.toString();
+    }
+
+    VehicleSourceInfo[] listSources(int userId) {
+        List<AdapterCandidate> candidates = mDiscovery.discover(userId);
+        Map<String, AdapterGrant> grants = new HashMap<>();
+        for (AdapterGrant grant : mGrantStore.listForUser(userId)) {
+            grants.put(grant.key(), grant);
+        }
+
+        List<VehicleSourceInfo> result = new ArrayList<>();
+        for (AdapterCandidate candidate : candidates) {
+            AdapterGrant grant = grants.remove(candidate.key());
+            boolean signerOk = grant != null
+                    && candidate.signingIdentity.acceptsGrantAnchor(grant.signerAnchor);
+            boolean requestCompatible = grant != null && grant.isCompatibleWith(candidate);
+            boolean additionalApproval = grant != null
+                    && requestCompatible
+                    && candidate.hasAdditionalRequests(grant);
+            AdapterConnection connection;
+            synchronized (mLock) {
+                connection = mConnections.get(candidate.key());
+            }
+            boolean connected = connection != null;
+            boolean ready = connection != null && connection.isReady();
+            String state = grant == null
+                    ? "PENDING_APPROVAL"
+                    : !signerOk
+                            ? "SIGNATURE_CHANGED"
+                            : !requestCompatible
+                                    ? "REQUEST_CONTRACT_CHANGED"
+                                    : !grant.enabled
+                                            ? "DISABLED"
+                                            : ready ? "ACTIVE" : "APPROVED";
+            RouterBridge.SourceStatus router = grant != null
+                    ? mRouterBridge.statusFor(grant.sourceId)
+                    : RouterBridge.SourceStatus.inactive();
+
+            VehicleSourceInfo info = new VehicleSourceInfo();
+            info.userId = userId;
+            info.packageName = candidate.component.getPackageName();
+            info.componentName = candidate.component.flattenToShortString();
+            info.adapterId = candidate.adapterId;
+            info.displayName = candidate.displayName;
+            info.uid = candidate.uid;
+            info.apiVersion = candidate.apiVersion;
+            info.signerSummary = candidate.signingIdentity.displaySummary();
+            info.requestedPriority = candidate.requestedPriority;
+            info.effectivePriority = grant != null ? grant.priority : candidate.requestedPriority;
+            info.sourceId = grant != null ? grant.sourceId : 0;
+            info.requestedPublishCapabilities = candidate.publishCapabilities.clone();
+            info.requestedCommandCapabilities = candidate.commandCapabilities.clone();
+            info.requestedPublishPropertyIds = candidate.requestedPublishPropertyIds.clone();
+            info.requestedCommandPropertyIds = candidate.requestedCommandPropertyIds.clone();
+            info.grantedPublishCapabilities = grant != null
+                    ? grant.publishCapabilities.clone() : new int[0];
+            info.grantedCommandCapabilities = grant != null
+                    ? grant.commandCapabilities.clone() : new int[0];
+            info.grantedPublishPropertyIds = grant != null
+                    ? grant.publishPropertyIds.clone() : new int[0];
+            info.grantedCommandPropertyIds = grant != null
+                    ? grant.commandPropertyIds.clone() : new int[0];
+            info.state = state;
+            info.enabled = grant != null && grant.enabled;
+            info.connected = connected;
+            info.ready = ready;
+            info.routerRegistered = router.registered;
+            info.pendingSignals = router.pendingSignals;
+            info.additionalApproval = additionalApproval;
+            info.lastError = router.lastError;
+            result.add(info);
+        }
+
+        for (AdapterGrant grant : grants.values()) {
+            RouterBridge.SourceStatus router = mRouterBridge.statusFor(grant.sourceId);
+            VehicleSourceInfo info = new VehicleSourceInfo();
+            info.userId = userId;
+            info.packageName = grant.component.getPackageName();
+            info.componentName = grant.component.flattenToShortString();
+            info.adapterId = "";
+            info.displayName = grant.component.getPackageName();
+            info.uid = -1;
+            info.apiVersion = 0;
+            info.signerSummary = "";
+            info.requestedPriority = grant.priority;
+            info.effectivePriority = grant.priority;
+            info.sourceId = grant.sourceId;
+            info.requestedPublishCapabilities = grant.publishCapabilities.clone();
+            info.requestedCommandCapabilities = grant.commandCapabilities.clone();
+            info.requestedPublishPropertyIds = grant.publishPropertyIds.clone();
+            info.requestedCommandPropertyIds = grant.commandPropertyIds.clone();
+            info.grantedPublishCapabilities = grant.publishCapabilities.clone();
+            info.grantedCommandCapabilities = grant.commandCapabilities.clone();
+            info.grantedPublishPropertyIds = grant.publishPropertyIds.clone();
+            info.grantedCommandPropertyIds = grant.commandPropertyIds.clone();
+            info.state = "MISSING";
+            info.enabled = grant.enabled;
+            info.connected = false;
+            info.ready = false;
+            info.routerRegistered = router.registered;
+            info.pendingSignals = router.pendingSignals;
+            info.additionalApproval = false;
+            info.lastError = router.lastError;
+            result.add(info);
+        }
+
+        result.sort((left, right) -> left.displayName.compareToIgnoreCase(right.displayName));
+        return result.toArray(new VehicleSourceInfo[0]);
+    }
+
+    void applyVehicleInfo(int[] fuelTypes, int[] connectorTypes) {
+        mRouterBridge.applyVehicleInfo(fuelTypes, connectorTypes);
     }
 
     AdapterCandidate findCandidate(int userId, ComponentName component) {

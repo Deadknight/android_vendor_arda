@@ -17,3 +17,11 @@ golden_splits/**/*.apk
 
 # Local files
 .DS_Store
+/ardaplatform/
+._*
+*.bak
+*.orig
+*.rej
+*.before-*
+*.arda-before-*
+*.arda-pre-*

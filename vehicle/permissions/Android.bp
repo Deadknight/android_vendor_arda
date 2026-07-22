@@ -1,0 +1,7 @@
+prebuilt_etc {
+    name: "privapp-permissions-arda-vehicle-sources",
+    src: "privapp-permissions-arda-vehicle-sources.xml",
+    filename_from_src: true,
+    sub_dir: "permissions",
+    product_specific: true,
+}

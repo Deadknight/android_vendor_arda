@@ -49,7 +49,9 @@ final class AdapterDiscovery {
                 continue;
             }
             try {
-                result.add(readCandidate(serviceInfo, userId));
+                AdapterCandidate candidate = readCandidate(serviceInfo, userId);
+                result.add(candidate);
+                Slog.i(TAG, "ARDA_VM_SOURCE_DISCOVERED " + candidate.summary());
             } catch (RuntimeException | PackageManager.NameNotFoundException e) {
                 Slog.w(TAG, "ARDA_VM_DISCOVERY_REJECT component="
                         + new ComponentName(serviceInfo.packageName, serviceInfo.name)
@@ -81,8 +83,30 @@ final class AdapterDiscovery {
         int[] commandCapabilities = CapabilityParser.parse(
                 metadata.getString(ArdaVehicleContract.META_COMMAND_CAPABILITIES, ""),
                 true);
+        int[] publishPropertyIds = PropertyIdParser.parse(
+                metadataText(metadata, ArdaVehicleContract.META_PUBLISH_PROPERTIES),
+                "publish");
+        int[] commandPropertyIds = PropertyIdParser.parse(
+                metadataText(metadata, ArdaVehicleContract.META_COMMAND_PROPERTIES),
+                "command");
         if (publishCapabilities.length == 0 && commandCapabilities.length == 0) {
             throw new IllegalArgumentException("adapter requests no capabilities");
+        }
+        if (publishCapabilities.length == 0 && publishPropertyIds.length != 0) {
+            throw new IllegalArgumentException(
+                    "publish properties require a publish capability");
+        }
+        if (commandCapabilities.length == 0 && commandPropertyIds.length != 0) {
+            throw new IllegalArgumentException(
+                    "command properties require a command capability");
+        }
+        if (publishCapabilities.length != 0 && publishPropertyIds.length == 0) {
+            throw new IllegalArgumentException(
+                    "publish capabilities require exact publish properties");
+        }
+        if (commandCapabilities.length != 0 && commandPropertyIds.length == 0) {
+            throw new IllegalArgumentException(
+                    "command capabilities require exact command properties");
         }
         ComponentName component = new ComponentName(serviceInfo.packageName, serviceInfo.name);
         SigningIdentity identity = SigningIdentity.read(mContext, serviceInfo.packageName, userId);
@@ -96,6 +120,8 @@ final class AdapterDiscovery {
                 requestedPriority,
                 publishCapabilities,
                 commandCapabilities,
+                publishPropertyIds,
+                commandPropertyIds,
                 identity);
     }
 
@@ -105,5 +131,26 @@ final class AdapterDiscovery {
             throw new IllegalArgumentException("missing metadata " + key);
         }
         return value.trim();
+    }
+
+    /**
+     * Android parses a numeric manifest meta-data value as Integer rather than String.
+     * Property declarations must therefore accept both forms. This is especially
+     * important for a single property ID such as "358614275"; comma-separated lists
+     * are normally retained as String by PackageManager.
+     */
+    private static String metadataText(Bundle metadata, String key) {
+        Object value = metadata.get(key);
+        if (value == null) {
+            return "";
+        }
+        if (value instanceof String stringValue) {
+            return stringValue.trim();
+        }
+        if (value instanceof Integer || value instanceof Long) {
+            return String.valueOf(value);
+        }
+        throw new IllegalArgumentException("metadata " + key
+                + " must be a string or integer");
     }
 }

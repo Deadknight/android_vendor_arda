@@ -7,4 +7,6 @@ parcelable AdapterDescriptor {
     int requestedPriority;
     int[] publishCapabilities;
     int[] commandCapabilities;
+    int[] requestedPublishPropertyIds;
+    int[] requestedCommandPropertyIds;
 }

@@ -12,6 +12,8 @@ public final class ShellReceiver extends BroadcastReceiver {
     public static final String EXTRA_PRIORITY = "priority";
     public static final String EXTRA_PUBLISH = "publish";
     public static final String EXTRA_COMMANDS = "commands";
+    public static final String EXTRA_PUBLISH_PROPERTIES = "publish_properties";
+    public static final String EXTRA_COMMAND_PROPERTIES = "command_properties";
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -38,6 +40,12 @@ public final class ShellReceiver extends BroadcastReceiver {
                                 : null,
                         intent.hasExtra(EXTRA_COMMANDS)
                                 ? intent.getStringExtra(EXTRA_COMMANDS)
+                                : null,
+                        intent.hasExtra(EXTRA_PUBLISH_PROPERTIES)
+                                ? intent.getStringExtra(EXTRA_PUBLISH_PROPERTIES)
+                                : null,
+                        intent.hasExtra(EXTRA_COMMAND_PROPERTIES)
+                                ? intent.getStringExtra(EXTRA_COMMAND_PROPERTIES)
                                 : null);
             } else if (command.equals("revoke")) {
                 result = runtime.revoke(requireComponent(intent));

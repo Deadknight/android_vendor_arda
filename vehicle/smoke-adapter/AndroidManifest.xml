@@ -26,10 +26,10 @@
                 android:value="100" />
             <meta-data
                 android:name="com.arda.vehicle.PUBLISH_CAPABILITIES"
-                android:value="ENERGY,HVAC_STATE" />
+                android:value="POWERTRAIN,ENERGY" />
             <meta-data
-                android:name="com.arda.vehicle.COMMAND_CAPABILITIES"
-                android:value="HVAC_CONTROL" />
+                android:name="com.arda.vehicle.PUBLISH_PROPERTIES"
+                android:value="291504647,291504644,289408000" />
         </service>
     </application>
 </manifest>

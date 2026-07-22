@@ -4,6 +4,7 @@ subdirs = [
     "router-service",
     "sdk",
     "manager",
+    "permissions",
     "smoke-adapter",
     "vhal-base",
     "vhal-proxy",

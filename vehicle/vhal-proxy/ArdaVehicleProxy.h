@@ -11,6 +11,7 @@
 #include <memory>
 #include <mutex>
 #include <thread>
+#include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -25,6 +26,9 @@ class ArdaVehicleProxy final : public aidlvhal::BnVehicle {
     ~ArdaVehicleProxy() override;
 
     bool start();
+    bool applyVehicleInfo(const std::vector<int32_t>& fuelTypes,
+                          const std::vector<int32_t>& connectorTypes,
+                          std::string* error);
 
     ndk::ScopedAStatus getAllPropConfigs(aidlvhal::VehiclePropConfigs* returnConfigs) override;
     ndk::ScopedAStatus getPropConfigs(const std::vector<int32_t>& props,
@@ -62,6 +66,7 @@ class ArdaVehicleProxy final : public aidlvhal::BnVehicle {
     };
 
     static bool isOverlayProperty(int32_t propId);
+    static bool isVehicleInfoProperty(int32_t propId);
     ndk::ScopedAStatus validateOverlaySubscriptions(
             const std::vector<aidlvhal::SubscribeOptions>& options,
             int32_t maxSharedMemoryFileCount) const;
@@ -76,6 +81,7 @@ class ArdaVehicleProxy final : public aidlvhal::BnVehicle {
     mutable std::mutex mLock;
     std::unordered_map<int32_t, aidlvhal::VehiclePropConfig> mOverlayConfigs;
     std::map<std::pair<int32_t, int32_t>, aidlvhal::VehiclePropValue> mLatestValues;
+    std::map<std::pair<int32_t, int32_t>, aidlvhal::VehiclePropValue> mVehicleInfoOverrides;
     std::unordered_map<const AIBinder*, SubscriptionState> mSubscriptions;
 };
 

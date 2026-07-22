@@ -1,0 +1,37 @@
+type arda_input_bridge_app, domain, coredomain, mlstrustedsubject;
+
+app_domain(arda_input_bridge_app)
+
+# The bridge is a platform-signed system_ext app. It only needs the framework
+# service lookup/call used by InputManagerGlobal.injectInputEvent().
+binder_use(arda_input_bridge_app)
+binder_call(arda_input_bridge_app, system_server)
+allow arda_input_bridge_app {
+    app_api_service
+    system_api_service
+}:service_manager find;
+
+# Abstract AF_UNIX listener. There is deliberately no filesystem sock_file
+# permission and therefore no app-data socket inode to create or unlink.
+allow arda_input_bridge_app self:unix_stream_socket {
+    create
+    bind
+    listen
+    accept
+    read
+    write
+    getattr
+    getopt
+    setopt
+    shutdown
+};
+
+# Production senderd/router domain.
+allow arda_vehicle_router arda_input_bridge_app:unix_stream_socket connectto;
+
+# Userdebug-only controlled probe. UID authorization is still enforced by
+# LocalSocket.getPeerCredentials() in the bridge.
+userdebug_or_eng(`
+    allow shell arda_input_bridge_app:unix_stream_socket connectto;
+    allow su arda_input_bridge_app:unix_stream_socket connectto;
+')
