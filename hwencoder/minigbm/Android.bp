@@ -1,0 +1,109 @@
+package {
+    default_applicable_licenses: ["arda_minigbm_hwencoder_license"],
+}
+
+license {
+    name: "arda_minigbm_hwencoder_license",
+    visibility: [":__subpackages__"],
+    license_kinds: [
+        "SPDX-license-identifier-Apache-2.0",
+        "SPDX-license-identifier-BSD",
+        "SPDX-license-identifier-MIT",
+    ],
+    license_text: ["src/LICENSE"],
+}
+
+cc_library_shared {
+    name: "libarda_minigbm_gralloc_gbm_mesa",
+    stem: "libminigbm_gralloc_gbm_mesa",
+    vendor: true,
+    relative_install_path: "egl/arda",
+
+    cflags: [
+        "-D_FILE_OFFSET_BITS=64",
+        "-D_GNU_SOURCE=1",
+        "-Wall",
+        "-Wcast-align",
+        "-Wcast-qual",
+        "-Wno-unused-parameter",
+        "-Wpointer-arith",
+        "-Wsign-compare",
+        "-DDRV_EXTERNAL",
+        "-DHAS_DMABUF_SYSTEM_HEAP",
+    ],
+
+    product_variables: {
+        platform_sdk_version: {
+            cflags: ["-DANDROID_API_LEVEL=%d"],
+        },
+    },
+
+    local_include_dirs: [
+        "src",
+        "src/cros_gralloc",
+        "src/gbm_mesa_driver",
+    ],
+
+    header_libs: [
+        "libhardware_headers",
+        "libnativebase_headers",
+        "libsystem_headers",
+    ],
+
+    static_libs: [
+        "libarect",
+    ],
+
+    shared_libs: [
+        "libcutils",
+        "libdmabufheap",
+        "libdrm",
+        "libgralloctypes",
+        "liblog",
+        "libnativewindow",
+        "libsync",
+    ],
+
+    srcs: [
+        "src/amdgpu.c",
+        "src/backend_mock.c",
+        "src/drv.c",
+        "src/drv_array_helpers.c",
+        "src/drv_helpers.c",
+        "src/dumb_driver.c",
+        "src/i915.c",
+        "src/mediatek.c",
+        "src/msm.c",
+        "src/rockchip.c",
+        "src/vc4.c",
+        "src/virtgpu.c",
+        "src/virtgpu_cross_domain.c",
+        "src/virtgpu_virgl.c",
+        "src/xe.c",
+        "src/cros_gralloc/cros_gralloc_buffer.cc",
+        "src/cros_gralloc/cros_gralloc_driver.cc",
+        "src/cros_gralloc/cros_gralloc_helpers.cc",
+        "src/gbm_mesa_driver/gbm_mesa_driver.cpp",
+        "src/gbm_mesa_driver/gbm_mesa_internals.cpp",
+    ],
+
+    cpp_std: "c++17",
+    required: ["libgbm_mesa_wrapper"],
+}
+
+// ARDA_RPI4_HW_ENCODER_PERSIST_BP_BEGIN
+sh_binary {
+    name: "arda_hw_encoder_mapper_bind",
+    src: "arda-hw-encoder-mapper-bind.sh",
+    filename: "arda-hw-encoder-mapper-bind",
+    vendor: true,
+}
+
+prebuilt_etc {
+    name: "arda_hw_encoder_mapper_bind_rc",
+    src: "arda-hw-encoder-mapper-bind.rc",
+    filename_from_src: true,
+    sub_dir: "init",
+    vendor: true,
+}
+// ARDA_RPI4_HW_ENCODER_PERSIST_BP_END
