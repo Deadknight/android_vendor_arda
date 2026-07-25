@@ -74,7 +74,12 @@ final class VehicleInfoController {
                     "Non-electric profiles must use connector UNKNOWN");
         }
 
-        applyToRuntime(targetUserId, fuelTypes, connectorTypes, false);
+        applyToRuntime(
+                targetUserId,
+                fuelTypes,
+                connectorTypes,
+                false,
+                true);
         persist(fuelTypes, connectorTypes);
     }
 
@@ -104,14 +109,20 @@ final class VehicleInfoController {
                     + targetUserId);
             return;
         }
-        applyToRuntime(targetUserId, fuelTypes, connectorTypes, true);
+        applyToRuntime(
+                targetUserId,
+                fuelTypes,
+                connectorTypes,
+                true,
+                false);
     }
 
     private void applyToRuntime(
             int targetUserId,
             int[] fuelTypes,
             int[] connectorTypes,
-            boolean retryRouter) {
+            boolean retryRouter,
+            boolean refreshConsumers) {
         RuntimeException lastRouterError = null;
         int attempts = retryRouter ? BOOT_ROUTER_ATTEMPTS : 1;
         for (int attempt = 1; attempt <= attempts; attempt++) {
@@ -133,8 +144,14 @@ final class VehicleInfoController {
                     lastRouterError);
         }
 
-        restartSystemCarService();
-        boolean mapsRestarted = restartMapsBestEffort(targetUserId);
+        boolean mapsRestarted = false;
+        if (refreshConsumers) {
+            restartSystemCarService();
+            mapsRestarted = restartMapsBestEffort(targetUserId);
+        } else {
+            Slog.i(TAG, "ARDA_VM_BOOT_REPLAY_NO_CONSUMER_RESTART user="
+                    + targetUserId);
+        }
         mLastAppliedUserId = targetUserId;
         mLastAppliedFuelCsv = csv(fuelTypes);
         mLastAppliedConnectorCsv = csv(connectorTypes);
@@ -142,6 +159,7 @@ final class VehicleInfoController {
         Slog.i(TAG, "ARDA_VM_VEHICLE_INFO_APPLY_PASS user=" + targetUserId
                 + " fuel=" + Arrays.toString(fuelTypes)
                 + " connectors=" + Arrays.toString(connectorTypes)
+                + " consumers_refreshed=" + refreshConsumers
                 + " maps_restarted=" + mapsRestarted);
     }
 
