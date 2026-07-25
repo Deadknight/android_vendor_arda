@@ -6,8 +6,6 @@ service arda_hw_encoder_mapper_bind /system/bin/sh /vendor/bin/arda-hw-encoder-m
     oneshot
     seclabel u:r:su:s0
 
-# Bind the custom mapper after Android has completed boot. Do not start AAP
-# here: arda-aap-autostart.rc owns the USB accessory property transitions.
-# This keeps arda_aap_session stopped while USB is only in adb mode.
 on property:sys.boot_completed=1
     exec_start arda_hw_encoder_mapper_bind
+    start arda_aap_session

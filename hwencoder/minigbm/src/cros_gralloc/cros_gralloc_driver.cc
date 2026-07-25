@@ -510,8 +510,15 @@ int32_t cros_gralloc_driver::lock(buffer_handle_t handle, int32_t acquire_fence,
 		}
 
 		if (!has_cpu_usage && is_hw_video_encoder_buffer) {
-			ALOGI("ARDA_MINIGBM_VIDEO_ENCODER_CPU_LOCK=ALLOW usage=0x%llx",
-			      static_cast<unsigned long long>(hnd->usage));
+			// This path runs once for every encoder input-buffer lock. Keep a
+			// single process-lifetime marker for diagnostics without flooding
+			// logcat during normal Android Auto video streaming.
+			static bool arda_video_encoder_cpu_lock_logged = false;
+			if (!arda_video_encoder_cpu_lock_logged) {
+				ALOGI("ARDA_MINIGBM_VIDEO_ENCODER_CPU_LOCK=ALLOW usage=0x%llx",
+				      static_cast<unsigned long long>(hnd->usage));
+				arda_video_encoder_cpu_lock_logged = true;
+			}
 		}
 	}
 
