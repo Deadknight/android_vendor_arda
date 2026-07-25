@@ -1612,3 +1612,46 @@ All three repositories are checked for fast-forward safety before ordinary push.
 The script verifies each remote branch SHA against its local HEAD afterwards.
 
 <!-- ARDA_CREATED_LAUNCHER_REPO_PUSH_RECORD_END -->
+
+<!-- ARDA_LAUNCHER_EXACT_SNAPSHOT_PUSH_BEGIN -->
+
+# 46. Exact CarLauncher tree-snapshot GitHub import
+
+The local CarLauncher checkout contains the complete current source tree but an
+older parent object in its AOSP commit history is absent. Full-history bundle
+and direct push attempts therefore failed while traversing historical parents.
+
+The project GitHub repository was populated with a new root commit whose tree
+ID is exactly equal to the local working HEAD tree. File content, paths,
+symlinks, and executable modes were verified through Git tree identity before
+push.
+
+```text
+timestamp=20260725_181208
+
+local_launcher_head=b806e0ee320f369456184a78843765909f3cff29
+local_launcher_tree=6737ea09965f2c754ac4d3fb7e36d1c2e3164a07
+github_launcher_snapshot_head=0b2e18033299ece761ee6415a37304104867b0ba
+github_launcher_snapshot_tree=6737ea09965f2c754ac4d3fb7e36d1c2e3164a07
+
+systemui_remote_head=c13f1da285c6836710ef1e64483bdb610aeeadb8
+
+launcher_tree_identity_verified=true
+launcher_history_mode=exact_tree_snapshot_root_commit
+launcher_original_local_history_modified=false
+launcher_aosp_remote_modified=false
+launcher_local_upstream_modified=false
+
+force_push=false
+build_performed=false
+device_touched=false
+apk_deployed=false
+reboot_performed=false
+repo_sync_called=false
+```
+
+The local Launcher repository remains the build source. The GitHub Launcher
+repository is an exact source-tree checkpoint because its inherited AOSP
+history could not be exported safely from the damaged historical object store.
+
+<!-- ARDA_LAUNCHER_EXACT_SNAPSHOT_PUSH_END -->
