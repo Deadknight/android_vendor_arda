@@ -1,0 +1,13 @@
+android_app {
+    name: "ArdaProjectionInsets",
+    srcs: ["src/**/*.java"],
+    resource_dirs: ["res"],
+    manifest: "AndroidManifest.xml",
+    certificate: "platform",
+    privileged: true,
+    platform_apis: true,
+    system_ext_specific: true,
+    optimize: {
+        enabled: false,
+    },
+}
