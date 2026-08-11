@@ -30,6 +30,8 @@ public final class ProjectionInsetsService extends Service {
     public static final String KEY_RIGHT = "arda_projection_inset_right";
     public static final String KEY_BOTTOM = "arda_projection_inset_bottom";
 
+    public static final String KEY_CONTENT_INSETS = "arda_projection_content_insets";
+
     public static final String KEY_STABLE_LEFT = "arda_projection_stable_inset_left";
     public static final String KEY_STABLE_TOP = "arda_projection_stable_inset_top";
     public static final String KEY_STABLE_RIGHT = "arda_projection_stable_inset_right";
@@ -86,7 +88,7 @@ public final class ProjectionInsetsService extends Service {
         registerSettingsObserver();
         applyFromSettings("service-create");
         Slog.i(TAG, "SERVICE_CREATE_PASS user=" + UserHandle.myUserId()
-                + " protocol=settings-global-v1 provider=systemOverlays"
+                + " protocol=settings-global-v2-atomic-with-legacy-fallback provider=systemOverlays"
                 + " source=display stable_policy=log-only");
     }
 
@@ -127,6 +129,27 @@ public final class ProjectionInsetsService extends Service {
         return Math.max(0, Settings.Global.getInt(resolver, key, 0));
     }
 
+    private int[] readAtomicContentInsets(ContentResolver resolver) {
+        final String raw = Settings.Global.getString(resolver, KEY_CONTENT_INSETS);
+        if (raw == null || raw.trim().isEmpty()) return null;
+        final String[] parts = raw.trim().split(",", -1);
+        if (parts.length != 4) {
+            Slog.w(TAG, "ATOMIC_INSETS_PARSE_FAIL value=" + raw + " reason=part-count");
+            return null;
+        }
+        final int[] values = new int[4];
+        try {
+            for (int i = 0; i < 4; i++) {
+                values[i] = Math.max(0, Integer.parseInt(parts[i].trim()));
+            }
+            return values;
+        } catch (NumberFormatException e) {
+            Slog.w(TAG, "ATOMIC_INSETS_PARSE_FAIL value=" + raw + " reason=number", e);
+            return null;
+        }
+    }
+
+
     private void applyFromSettings(String reason) {
         if (Looper.myLooper() != Looper.getMainLooper()) {
             mMainHandler.post(() -> applyFromSettings(reason + "-main"));
@@ -134,10 +157,12 @@ public final class ProjectionInsetsService extends Service {
         }
 
         final ContentResolver resolver = getContentResolver();
-        final int left = readNonNegative(resolver, KEY_LEFT);
-        final int top = readNonNegative(resolver, KEY_TOP);
-        final int right = readNonNegative(resolver, KEY_RIGHT);
-        final int bottom = readNonNegative(resolver, KEY_BOTTOM);
+        final int[] atomicInsets = readAtomicContentInsets(resolver);
+        final boolean atomicUsed = atomicInsets != null;
+        final int left = atomicUsed ? atomicInsets[0] : readNonNegative(resolver, KEY_LEFT);
+        final int top = atomicUsed ? atomicInsets[1] : readNonNegative(resolver, KEY_TOP);
+        final int right = atomicUsed ? atomicInsets[2] : readNonNegative(resolver, KEY_RIGHT);
+        final int bottom = atomicUsed ? atomicInsets[3] : readNonNegative(resolver, KEY_BOTTOM);
 
         final int stableLeft = readNonNegative(resolver, KEY_STABLE_LEFT);
         final int stableTop = readNonNegative(resolver, KEY_STABLE_TOP);
@@ -180,6 +205,7 @@ public final class ProjectionInsetsService extends Service {
                 + " content=L" + left + ",T" + top + ",R" + right + ",B" + bottom
                 + " stable=L" + stableLeft + ",T" + stableTop
                 + ",R" + stableRight + ",B" + stableBottom
+                + " content_source=" + (atomicUsed ? "atomic-v2" : "legacy-v1")
                 + " stable_policy=log-only");
     }
 
