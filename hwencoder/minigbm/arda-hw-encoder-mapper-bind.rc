@@ -1,11 +1,17 @@
-service arda_hw_encoder_mapper_bind /system/bin/sh /vendor/bin/arda-hw-encoder-mapper-bind
+# Legacy module filename retained; allocator bind behavior was retired.
+# Apply properties before SurfaceFlinger construction.
+on early-init
+    setprop debug.sf.enable_gl_backpressure 0
+    setprop vendor.hwc.drm.enable_virtual_display 1
+
+service arda_h264_sf_tune /system/bin/sh /vendor/bin/arda-hw-encoder-mapper-bind
     class late_start
     user root
-    group root system shell
-    disabled
+    group root graphics
     oneshot
-    seclabel u:r:su:s0
+
+on property:init.svc.surfaceflinger=running
+    start arda_h264_sf_tune
 
 on property:sys.boot_completed=1
-    exec_start arda_hw_encoder_mapper_bind
-    start arda_aap_session
+    restart arda_h264_sf_tune
