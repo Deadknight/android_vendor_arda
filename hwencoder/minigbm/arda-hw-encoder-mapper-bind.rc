@@ -8,6 +8,7 @@ service arda_h264_sf_tune /system/bin/sh /vendor/bin/arda-hw-encoder-mapper-bind
     class late_start
     user root
     group root graphics
+    seclabel u:r:su:s0
     oneshot
 
 on property:init.svc.surfaceflinger=running
