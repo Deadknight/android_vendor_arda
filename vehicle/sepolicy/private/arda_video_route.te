@@ -1,0 +1,10 @@
+# ArdaPlatform selects the route; SurfaceFlinger snapshots it at process start.
+system_restricted_prop(arda_video_route_prop)
+system_restricted_prop(arda_video_route_active_prop)
+
+set_prop(platform_app, arda_video_route_prop)
+get_prop(platform_app, arda_video_route_prop)
+get_prop(platform_app, arda_video_route_active_prop)
+
+get_prop(surfaceflinger, arda_video_route_prop)
+set_prop(surfaceflinger, arda_video_route_active_prop)

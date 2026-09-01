@@ -1,0 +1,6 @@
+persist.sys.arda.video_route u:object_r:arda_video_route_prop:s0 exact string
+sys.arda.video_route.active u:object_r:arda_video_route_active_prop:s0 exact string
+
+# ARDA_CAPTURE_PROFILE_SELECTOR_V1
+persist.sys.arda.capture_profile u:object_r:arda_video_route_prop:s0 exact string
+sys.arda.capture_profile.active u:object_r:arda_video_route_active_prop:s0 exact string

@@ -5,7 +5,7 @@ IMG="${1:?Usage: arda_patch_final_img_cmdline.sh <image.img>}"
 
 EXTRA_ARGS=(
   "video=HDMI-A-1:400x1280@60e"
-  "cma=512M"
+  "cma=384M"
   "coherent_pool=8M"
   "swiotlb=131072"
   "androidboot.serialno=1000000028c0b59c"

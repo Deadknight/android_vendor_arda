@@ -1,0 +1,10 @@
+# ARDA_CPU_TUNER_SELINUX_V1
+#
+# arda-connectivity-supervisor intentionally runs through /system/bin/sh,
+# therefore its SELinux domain is shell. On userdebug/eng builds only, allow
+# that domain to update the cpufreq policy maximum used by the ARDA CPU tuner.
+#
+# Keep this debug-build-only: production user builds must not gain this access.
+userdebug_or_eng(`
+    allow shell sysfs_devices_system_cpu:file { open write };
+')
