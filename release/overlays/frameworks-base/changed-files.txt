@@ -1,0 +1,12 @@
+core/java/android/content/pm/PackageParser.java
+core/java/android/content/pm/PackageParser.java.arda_gms_shareduser_bypass.bak
+core/java/com/android/internal/pm/pkg/parsing/ParsingPackageUtils.java
+core/java/com/android/internal/pm/pkg/parsing/ParsingPackageUtils.java.arda_gms_shareduser_bypass.bak
+core/java/com/android/internal/pm/pkg/parsing/ParsingPackageUtils.java.arda_gms_shareduser_bypass.bak2
+libs/WindowManager/Shell/src/com/android/wm/shell/taskview/TaskViewTransitions.java
+packages/SettingsProvider/src/com/android/providers/settings/SettingsProvider.java
+packages/SettingsProvider/src/com/android/providers/settings/SettingsProvider.java.bak-arda-deviceconfig-20260702_133121
+services/core/java/com/android/server/am/ActivityManagerService.java
+services/core/java/com/android/server/am/ActivityManagerService.java.arda-gms-getuidprocstate-bak
+services/core/java/com/android/server/am/ActivityManagerService.java.arda-gms-getuidprocstate-v1-bak
+services/core/java/com/android/server/policy/PhoneWindowManager.java
