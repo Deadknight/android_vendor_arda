@@ -1,0 +1,10 @@
+# ARDA persistent certificate storage.
+#
+# init executes restorecon_recursive on /data/local/arda during post-fs-data.
+# The active certificate selector is a symlink intentionally labeled
+# shell_data_file because the certificate updater currently runs in the
+# shell SELinux domain. init needs only metadata access to that symlink while
+# walking the tree.
+#
+# Keep this permission deliberately narrow.
+allow init shell_data_file:lnk_file getattr;
