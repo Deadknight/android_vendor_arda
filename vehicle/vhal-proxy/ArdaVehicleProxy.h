@@ -61,7 +61,7 @@ class ArdaVehicleProxy final : public aidlvhal::BnVehicle {
 
   private:
     struct SubscriptionState {
-        std::weak_ptr<aidlvhal::IVehicleCallback> callback;
+        std::shared_ptr<aidlvhal::IVehicleCallback> callback;
         std::vector<aidlvhal::SubscribeOptions> options;
     };
 

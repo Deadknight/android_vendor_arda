@@ -165,7 +165,11 @@ std::optional<VehiclePropValue> fromRouterEvent(const routerpb::VhalEvent& event
     VehiclePropValue value;
     value.prop = event.property_id();
     value.areaId = event.area_id();
-    value.timestamp = event.timestamp_nanos() > 0 ? event.timestamp_nanos() : elapsedRealtimeNanos();
+    // NIGHT_MODE from the AAP/router can carry session-relative timestamps.
+    // CarNightService requires monotonic elapsedRealtime nanos since device boot.
+    value.timestamp = event.property_id() == kNightMode
+            ? elapsedRealtimeNanos()
+            : (event.timestamp_nanos() > 0 ? event.timestamp_nanos() : elapsedRealtimeNanos());
     value.status = VehiclePropertyStatus::AVAILABLE;
 
     switch (event.value_type()) {
@@ -528,6 +532,9 @@ ScopedAStatus ArdaVehicleProxy::subscribe(
                                    }),
                     state.options.end());
             state.options.push_back(option);
+            if (option.propId == kNightMode) {
+                ALOGI("ARDA_VHAL_NIGHT_SUBSCRIBED options=%zu", state.options.size());
+            }
         }
     }
 
@@ -631,10 +638,14 @@ void ArdaVehicleProxy::handleRouterEvents(const std::vector<VehiclePropValue>& v
         std::lock_guard<std::mutex> lock(mLock);
         for (const auto& value : values) {
             mLatestValues[{value.prop, value.areaId}] = value;
+            if (value.prop == kNightMode && !value.value.int32Values.empty()) {
+                ALOGI("ARDA_VHAL_NIGHT_EVENT value=%d timestamp=%lld",
+                      value.value.int32Values[0], static_cast<long long>(value.timestamp));
+            }
         }
 
         for (auto it = mSubscriptions.begin(); it != mSubscriptions.end();) {
-            std::shared_ptr<aidlvhal::IVehicleCallback> callback = it->second.callback.lock();
+            std::shared_ptr<aidlvhal::IVehicleCallback> callback = it->second.callback;
             if (callback == nullptr) {
                 it = mSubscriptions.erase(it);
                 continue;
